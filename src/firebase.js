@@ -1,10 +1,12 @@
-import firebase from "firebase/compat/app"
-import "firebase/compat/auth"
-import "firebase/compat/firestore"
-import { getAuth } from "firebase/auth";
+import { initializeApp } from 'firebase/app';
+import { getFirestore} from 'firebase/firestore';
 import { getStorage } from "firebase/storage";
-// other services is needed
+// Follow this pattern to import other Firebase services
+// import { } from 'firebase/<service>';
+
+// TODO: Replace the follow ing with your app's Firebase project configuration
 const firebaseConfig = {
+  //...
     apiKey: "AIzaSyBs_SrM1zARcKKLP3Z9VrLNuefnY6AEfbA",
     authDomain: "instagram-clone-9f0ac.firebaseapp.com",
     projectId: "instagram-clone-9f0ac",
@@ -12,12 +14,12 @@ const firebaseConfig = {
     messagingSenderId: "915370260973",
     appId: "1:915370260973:web:f007136739cb14e3b78fe4",
     measurementId: "G-X7FVDXLMJM"
+
 };
 
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const db = firebaseApp.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
+export default {db,storage};
 
-export default db;
-export const auth = getAuth(firebaseApp);
-export const storage = getStorage(firebaseApp);
