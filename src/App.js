@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, getDocs,collection, query, where} from "firebase/firestore";
 import './App.css';
 import Post from './Post';
-import { getFirestore} from 'firebase/firestore';
-//  import {db}  from './firebase'
 import { Button, Input, makeStyles, Modal } from '@material-ui/core'
-import {onAuthStateChanged,signOut, getAuth, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword} from "firebase/auth";
-// import ImageUpload from './ImageUpload';
+import ImageUpload from './ImageUpload';
+import { auth, db } from "./firebase";
+
 
 function getModalStyle() {
   const top = 50;
@@ -40,126 +38,93 @@ function App() {
   const [email,setEmail] = useState(false);
   const [user,setUser]=useState(null);
   const [openSignIn,setOpenSigIn]=useState(false);
-  const auth = getAuth();
-  const db=getFirestore();
-  // const db=getFirestore();
-  // const db=getFirestore();
-  // useeffect runs a piece a code on specific condition 
- 
 
-  useEffect(()=>{
-    const auth = getAuth();
-    const unsubscribe=onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-        // User is signed in, see docs for a list of available properties
-        // https://firebase.google.com/docs/reference/js/firebase.User
-        const uid = user.uid;
-        console.log(user);
-        setUser(user);
-      if(user.displayName)
-      {
-        //dont update
-      }else{
-        return updateProfile(user, {
-          displayName:username,
-        });
-      }
-        // ...
+  // useEffect(()=>{
+  //   const auth = getAuth();
+  //   const unsubscribe=onAuthStateChanged(auth, (user) => {
+  //     if (user) {
+  //       setUser(user);
+  //       // User is signed in, see docs for a list of available properties
+  //       // https://firebase.google.com/docs/reference/js/firebase.User
+  //       const uid = user.uid;
+  //       console.log(user);
+  //       setUser(user);
+  //     if(user.displayName)
+  //     {
+  //       //dont update
+  //     }else{
+  //       return updateProfile(user, {
+  //         displayName:username,
+  //       });
+  //     }
+  //       // ...
+  //     } else {
+  //       // User is signed out
+  //       // ...
+  //       setUser(null);
+  //     }
+  //   });
+
+  //   return ()=>{
+  //     unsubscribe();
+  //   }
+  //   },[user,username]);
+
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(authUser => {
+      if (authUser) {
+        setUser(authUser);
       } else {
-        // User is signed out
-        // ...
         setUser(null);
       }
     });
 
-    return ()=>{
+    return () => {
+      // perform some cleanup actions
       unsubscribe();
     }
-    },[user,username]);
+  }, [user, username])
 
-
-
-    useEffect(() => {
-      const q=query(collection(db,"posts"))
-       onSnapshot(q,(querySnapshot) => {
-        setPosts(querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          post: doc.data()
-        })))
-      })
-    }, [])
-
-    // useEffect(() => {
-    //    const q=query(collection(db,"posts"));
-    //    const querySnapshot= getDocs(q);
-    //     setPosts(querySnapshot.forEach(doc => ({
-    //       id: doc.id,
-    //       post: doc.data()
-    //     })))
-    //   },[])
-    
-    // useEffect(() => {
-    //   db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-    //     setPosts(snapshot.docs.map(doc => ({
-    //       id: doc.id,
-    //       post: doc.data()
-    //     })))
-    //   })
-    // }, [])
   
-// useEffect(() => {
-
-//   const q = query(collection(db, "posts"));
-
-//   onSnapshot(q, (querySnapshot) => {
-//     setPosts(
-//       querySnapshot.docs.map((doc) => ({ id: doc.id, post: doc.data() }))
-//     );
-//   });
-// });
-    
- 
-  const signUp=(e) =>{
-    const auth = getAuth();
-    e.preventDefault();
-     createUserWithEmailAndPassword(auth,email, password)
-    .then((userCredential) => {
-      // Signed in 
-      const user = userCredential.user;
-      // ...
+  useEffect(() => {
+    db.collection("posts").orderBy('timestamp','desc').onSnapshot(snapshot => {
+      setPosts(snapshot.docs.map(doc => ({
+        id: doc.id,
+        post: doc.data()
+      })))
     })
-    .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      alert(error.message);
-      // ..
-    });
+  }, [])
+
+    
+  const signUp = (e) => {
+    e.preventDefault();
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then((authUser) => {
+        return authUser.user.updateProfile({ displayName: username });
+      })
+      .catch((err) => alert(err.message))
+
     setOpen(false);
   }
 
-const signIn=(e)=>{
-  const auth = getAuth();
+
+
+const signIn = (e) => {
   e.preventDefault();
-  signInWithEmailAndPassword(auth, email, password)
-  .then((userCredential) => {
-    // Signed in 
-    const user = userCredential.user;
-    // ...
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    alert(error.message);
-  });
-  setOpenSigIn(false);
+
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(err => alert(err.message))
+
+    setOpenSigIn(false);
 }
 
 
   return (
       
     <div className="app">
-      {/* <ImageUpload/> */}
+      
       <Modal
       open={open}
       onClose={() =>setOpen(false)}
@@ -232,24 +197,33 @@ const signIn=(e)=>{
 
        <div className="app_header">
         <img className="app_headerImage" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Instagram_logo.svg/2560px-Instagram_logo.svg.png" width="200" height="100"></img>    
-       </div>
-    {user ?(
-      <Button onClick={()=> signOut(auth)}>log out</Button>
-    ):(
+        {user ?(
+      <Button onClick={()=> auth.signOut()}>log out</Button>
+        ):(
       <div className="app_loginConatiner">
        <Button onClick={()=> setOpenSigIn(true)}>Sign In</Button> 
       <Button onClick={()=> setOpen(true)}>Sign Up</Button>
       </div>
-    )
-    }
-   
+      )
+      }
+       </div>
+    
+ 
     {
       posts.map(({id,post})=> (
         <Post key={id} username={post.username} caption={post.caption} imageUrl={post.imageUrl} />
       ))
     }
-   
-    </div>
+  
+    {user?.displayName?(
+       <ImageUpload username={user.displayName}/> ):
+       (
+            <h3>sorry you need to login</h3>
+       )
+    }
+    
+   </div>
+    
   );
 }
 
