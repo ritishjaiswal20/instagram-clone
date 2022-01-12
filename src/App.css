@@ -2,17 +2,19 @@
     margin:0;
 }
 .app{
-    background-color:#fafafa;
+    background-color:rgb(252, 247, 247);
 }
 .app_header
 {   
     background-color:white;
+   
     padding:20px;
     border-bottom:1px solid lightgrey;
     object-fit:content;
     display:flex;
     justify-content:space-between;
 }
+
 .app_headerImage
 {
     object-fit:contain;
@@ -20,4 +22,8 @@
 .app_signup{
     display:flex;
     flex-direction:column;
+}
+.app_posts{
+    padding:20px;
+
 }
